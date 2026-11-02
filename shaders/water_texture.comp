@@ -33,8 +33,14 @@ void main()
 
         float waveLength = 1.0;
         float k = (2 * pi) / waveLength;
-        float amp = 2.0;
-        vec3 wave = gerstXYZ(uv, k, amp, vec2(1, 0), timeSeconds);
+        float amp = 0.3;
 
-        imageStore(heightMapImage, pixel, vec4(wave, 1.0));
+        vec3 wave = vec3(0.0);
+
+        for(int i = 0; i < 10; i++)
+        {
+                wave += gerstXYZ(uv, k, amp / i, normalize(vec2(-i, 0.0 + i / 10)), timeSeconds);
+        }
+
+        imageStore(heightMapImage, pixel, vec4(clamp(wave/10.0, -10.0, 10.0), 1.0));
 }

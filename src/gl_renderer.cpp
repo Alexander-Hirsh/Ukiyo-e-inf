@@ -79,11 +79,8 @@ GLuint glShaderInit(int shaderType, const char* shaderPath, BumpAllocator* trans
         glShaderSource(shaderID, 1, &shaderData, 0);
         glCompileShader(shaderID);
 
-        if(glContext.shaderTimestamps == 0)
-        {
-                glContext.shaderPathes[glContext.shaderCount] = shaderPath;
-                glContext.shaderTimestamps[glContext.shaderCount++] = getTimestamp(shaderPath);
-        }
+        glContext.shaderPathes[glContext.shaderCount] = shaderPath;
+        glContext.shaderTimestamps[glContext.shaderCount++] = getTimestamp(shaderPath);
 
         // Check if shader actually compiled
         {
@@ -153,6 +150,8 @@ GLuint glCreateShaderProgram(BumpAllocator* transientStorage, const char* shader
 
 bool glCreateALLShaderPrograms(BumpAllocator* transientStorage)
 {
+        glContext.shaderCount = 0;
+        
         if(glContext.waterDrawProgramID) glDeleteProgram(glContext.waterDrawProgramID);
         glContext.waterDrawProgramID = glCreateShaderProgram(transientStorage,
                                                              WATER_DRAW_NAME, 
@@ -231,7 +230,7 @@ void glRender(BumpAllocator* transientStorage, PARAMETERS params, float deltaTim
         {
                 for(int sID = 0; sID < glContext.shaderCount; sID++)
                 {
-                        long long cTimestamp = getTimestamp(glContext.shaderPathes[sID]);
+                        long long cTimestamp = getTimestamp(glContext.shaderPathes[sID].c_str());
 
                         if(cTimestamp > glContext.shaderTimestamps[sID])
                         {
