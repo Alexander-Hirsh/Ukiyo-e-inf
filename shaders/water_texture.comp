@@ -1,0 +1,40 @@
+#version 430
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(rgba32f, binding = 0) uniform writeonly image2D heightMapImage;
+
+uniform float timeSeconds;
+
+float constG = 9.81;
+float pi = 3.1415926;
+
+vec3 gerstXYZ(vec2 ab, float k, float amp, vec2 dir, float t)
+{
+        float c = sqrt(constG/k);
+
+        float phase = k * (dot(dir, ab) + c * t);
+
+        float s = sin(phase);
+        float co = cos(phase);
+
+        return vec3(dir.x * amp * s,
+                    -amp * co,
+                    dir.y * amp * s);
+} 
+
+void main()
+{
+        ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+        ivec2 size = imageSize(heightMapImage);
+        if (pixel.x >= size.x || pixel.y >= size.y)
+                return;
+
+        vec2 uv = (vec2(pixel) + 0.5) / vec2(size);
+
+        float waveLength = 1.0;
+        float k = (2 * pi) / waveLength;
+        float amp = 2.0;
+        vec3 wave = gerstXYZ(uv, k, amp, vec2(1, 0), timeSeconds);
+
+        imageStore(heightMapImage, pixel, vec4(wave, 1.0));
+}
