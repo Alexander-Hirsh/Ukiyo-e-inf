@@ -6,21 +6,39 @@ layout(rgba32f, binding = 0) uniform writeonly image2D heightMapImage;
 uniform float timeSeconds;
 
 float constG = 9.81;
-float pi = 3.1415926;
+float pi = 3.14159265359;
+float e = 2.71828182846;
 
-vec3 gerstXYZ(vec2 ab, float k, float amp, vec2 dir, float t)
+float hash12(vec2 p) {
+        uvec2 u = floatBitsToUint(p * vec2(141421356, 2718281828));
+        return float((u.x ^ u.y) * 3141592653u) / float(~0u);
+}
+
+
+// vec3 gerstner(vec3 P0) {
+//         float k   = pi * 2.0 / wavelength;
+//         float c   = sqrt(9.81 / k);            // phase speed
+//         float phi = k * dot(direction, P0.xy) - c * k * timeSeconds + phase;
+//         float QA  = steepness * amplitude;
+//         return vec3(
+//                 direction.x * QA * cos(phi),   // Δx
+//                 amplitude         * sin(phi),   // Δy
+//                 direction.y * QA * cos(phi)    // Δz
+//         );
+// }
+
+float waveHeight(vec2 pos, vec2 dir, float a, float wl, float s, float t)
 {
-        float c = sqrt(constG/k);
+        float frequency = 2 / wl;
+        float phase = s * frequency;
 
-        float phase = k * (dot(dir, ab) + c * t);
+        float d = dot(dir, pos);
 
-        float s = sin(phase);
-        float co = cos(phase);
+        float height = a * ( pow(e, sin(pi * d * frequency + t * phase) - 1) - pow(e, -2) - 0.5);
 
-        return vec3(dir.x * amp * s,
-                    -amp * co,
-                    dir.y * amp * s);
-} 
+        float hash = hash12(pos + d);
+        return height;
+}
 
 void main()
 {
@@ -31,16 +49,23 @@ void main()
 
         vec2 uv = (vec2(pixel) + 0.5) / vec2(size);
 
-        float waveLength = 1.0;
-        float k = (2 * pi) / waveLength;
-        float amp = 0.3;
+        float h; 
+        
+        float amp = 1.0;
+        float frequency = 1.0;
+        vec2 dir = (normalize(vec2(1, 1)));
 
-        vec3 wave = vec3(0.0);
-
-        for(int i = 0; i < 10; i++)
+        for(int i = 1; i < 15; i++) 
         {
-                wave += gerstXYZ(uv, k, amp / i, normalize(vec2(-i, 0.0 + i / 10)), timeSeconds);
+                float hash = hash12(dir);
+                dir = normalize(vec2(hash - 0.5, hash));
+
+                h += waveHeight(uv, dir, amp , frequency, 0.2, timeSeconds);
+
+                amp *= 0.82;
+                frequency *= 1.18;
+
         }
 
-        imageStore(heightMapImage, pixel, vec4(clamp(wave/10.0, -10.0, 10.0), 1.0));
+        imageStore(heightMapImage, pixel, vec4(vec3(h), 1.0));
 }

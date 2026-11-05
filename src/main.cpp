@@ -152,6 +152,11 @@ void drawParameterGUI(PARAMETERS& params, Camera3D& camera)
         ImGui::Checkbox("Wireframe mode", &params.wireframe);
         ImGui::SliderInt("Tessellation level", (int*)&params.tessLevel, 1, params.maxTessLevel);
 
+        ImGui::SeparatorText("Instances");
+        ImGui::SliderInt("Columns", &params.instanceColumns, 1, 32);
+        ImGui::SliderInt("Rows", &params.instanceRows, 1, 32);
+        ImGui::SliderFloat("Spacing", &params.instanceSpacing, 0.1f, 5.0f);
+
         ImGui::SeparatorText("Textures");
         ImGui::Image((void*)(intptr_t)glContext.waterHeightTexture, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 

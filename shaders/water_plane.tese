@@ -10,6 +10,7 @@ uniform mat4 cameraTransform;      // the projection matrix
 
 // received from Tessellation Control Shader - all texture coordinates for the patch vertices
 in vec2 TextureCoord[];
+in vec2 PatchInstanceOffset[];
 
 // send to Fragment Shader for coloring
 out float Height;
@@ -54,6 +55,8 @@ void main()
         vec4 p = (p1 - p0) * v + p0;
 
         p.y += Height;
+        p.x += PatchInstanceOffset[0].x;
+        p.z += PatchInstanceOffset[0].y;
 
         // ----------------------------------------------------------------------
         // output patch point position in clip space

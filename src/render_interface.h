@@ -117,6 +117,9 @@ struct PARAMETERS
 {
         bool wireframe = false;
         GLuint tessLevel = 16;
+        int instanceColumns = 1;
+        int instanceRows = 1;
+        float instanceSpacing = 1.0f;
         constexpr static int maxTessLevel = 64;
 };
 

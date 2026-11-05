@@ -22,6 +22,9 @@ struct GLContext
         GLuint waterComputeTimeID;
         GLuint waterHeightMapID;
         GLuint tessLevelID;
+        GLuint instanceColumnsID;
+        GLuint instanceRowsID;
+        GLuint instanceSpacingID;
 
         float vertices[20] = {
                 0.5f,  0.0f, 0.5f,  1.0f, 1.0f,  // top right
@@ -91,7 +94,7 @@ GLuint glShaderInit(int shaderType, const char* shaderPath, BumpAllocator* trans
                 if(!success)
                 {
                         glGetShaderInfoLog(shaderID, 2048, 0, shaderLog);
-                        SM_ASSERT(false, "Failed to compile %s Shader, Error: %s", shaderPath, shaderLog);
+                        SM_ASSERT("Failed to compile %s Shader, Error: %s", shaderPath, shaderLog);
                         glDeleteShader(shaderID);
                         return 0;
                 }
@@ -164,6 +167,14 @@ bool glCreateALLShaderPrograms(BumpAllocator* transientStorage)
 
         if(!glContext.waterDrawProgramID || !glContext.waterComputeProgramID) return false;
 
+        glContext.cameraTransformID = glGetUniformLocation(glContext.waterDrawProgramID, "cameraTransform");
+        glContext.waterHeightMapID = glGetUniformLocation(glContext.waterDrawProgramID, "heightMap");
+        glContext.tessLevelID = glGetUniformLocation(glContext.waterDrawProgramID, "tessLevel");
+        glContext.instanceColumnsID = glGetUniformLocation(glContext.waterDrawProgramID, "instanceColumns");
+        glContext.instanceRowsID = glGetUniformLocation(glContext.waterDrawProgramID, "instanceRows");
+        glContext.instanceSpacingID = glGetUniformLocation(glContext.waterDrawProgramID, "instanceSpacing");
+        glContext.waterComputeTimeID = glGetUniformLocation(glContext.waterComputeProgramID, "timeSeconds");
+
         return true;
 }
 
@@ -183,8 +194,8 @@ bool glInit(BumpAllocator* transientStorage)
                      0, GL_RGBA, GL_FLOAT, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         // glGenVertexArrays(1, &glContext.pointVertexArrayID);
@@ -210,12 +221,6 @@ bool glInit(BumpAllocator* transientStorage)
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-
-        // Uniforms
-        glContext.cameraTransformID = glGetUniformLocation(glContext.waterDrawProgramID, "cameraTransform");
-        glContext.waterHeightMapID = glGetUniformLocation(glContext.waterDrawProgramID, "heightMap");
-        glContext.waterComputeTimeID = glGetUniformLocation(glContext.waterComputeProgramID, "timeSeconds");
-        glContext.tessLevelID = glGetUniformLocation(glContext.waterDrawProgramID, "tessLevel");
 
         glEnable(GL_FRAMEBUFFER_SRGB);
         glPatchParameteri(GL_PATCH_VERTICES, 4);
@@ -291,6 +296,9 @@ void glRender(BumpAllocator* transientStorage, PARAMETERS params, float deltaTim
                 glUseProgram(glContext.waterDrawProgramID);
 
                 glUniform1i(glContext.tessLevelID, params.tessLevel);
+                glUniform1i(glContext.instanceColumnsID, params.instanceColumns);
+                glUniform1i(glContext.instanceRowsID, params.instanceRows);
+                glUniform1f(glContext.instanceSpacingID, params.instanceSpacing);
                 glUniformMatrix4fv(glContext.cameraTransformID, 1, GL_FALSE, &cameraSpaceTransform.ax);
                 glUniform1i(glContext.waterHeightMapID, 0);
                 glActiveTexture(GL_TEXTURE0);
@@ -300,7 +308,8 @@ void glRender(BumpAllocator* transientStorage, PARAMETERS params, float deltaTim
 
                 glPolygonMode(GL_FRONT_AND_BACK, params.wireframe ? GL_LINE : GL_FILL);
 
-                glDrawArrays(GL_PATCHES, 0, 4);
+                glDrawArraysInstanced(GL_PATCHES, 0, 4,
+                                      params.instanceColumns * params.instanceRows);
                 
         }
 }
